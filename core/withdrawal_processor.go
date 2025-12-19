@@ -3,6 +3,11 @@ package core
 import (
 	"context"
 	"fmt"
+	"math/big"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/gobicycle/bicycle/audit"
 	"github.com/gobicycle/bicycle/config"
 	"github.com/gofrs/uuid"
@@ -10,10 +15,6 @@ import (
 	"github.com/xssnick/tonutils-go/address"
 	"github.com/xssnick/tonutils-go/tlb"
 	"github.com/xssnick/tonutils-go/ton/wallet"
-	"math/big"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 type WithdrawalsProcessor struct {
@@ -81,7 +82,7 @@ func (p *WithdrawalsProcessor) startWithdrawalsProcessor() {
 			break
 		}
 		time.Sleep(config.ExternalWithdrawalPeriod)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*25) // must be < ExternalWithdrawalPeriod
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*50) // must be < ExternalWithdrawalPeriod
 		err := p.makeColdWalletWithdrawals(ctx)
 		if err != nil {
 			log.Fatalf("make withdrawals to cold wallet error: %v\n", err)
