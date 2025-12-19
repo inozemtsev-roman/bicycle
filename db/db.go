@@ -735,13 +735,15 @@ func (c *Connection) GetTonInternalWithdrawalTasks(ctx context.Context, limit in
 		SELECT deposit_address, MAX(lt) AS last_lt, tw.subwallet_id
 		FROM payments.external_incomes di
 			LEFT JOIN (
-			SELECT from_address, since_lt, finish_lt
+			SELECT iw1.from_address, iw1.since_lt, iw1.finish_lt
 			FROM payments.internal_withdrawals iw1
-			WHERE since_lt = (
-				SELECT MAX(iw2.since_lt)
-				FROM payments.internal_withdrawals iw2
-				WHERE iw2.from_address = iw1.from_address AND failed = false
-			)
+			JOIN (
+			    SELECT from_address, MAX(since_lt) AS max_since_lt
+			    FROM payments.internal_withdrawals
+			    WHERE failed = false 
+			    GROUP BY from_address 
+			) iw2 ON iw2.from_address = iw1.from_address AND iw2.max_since_lt = iw1.since_lt
+			WHERE iw1.failed = false
 		) as iw3 ON from_address = deposit_address
 		JOIN payments.ton_wallets tw ON di.deposit_address = tw.address
 		WHERE ((since_lt IS NOT NULL AND finish_lt IS NOT NULL AND lt > finish_lt) OR (since_lt IS NULL)) 
